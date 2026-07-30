@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   methodology: methodology.html
   vignettes: vignettes.html
-last_built: 2026-07-30T12:17Z
+last_built: 2026-07-30T12:52Z
 urls:
   reference: https://warint.github.io/chokepointR/reference
   article: https://warint.github.io/chokepointR/articles

@@ -8,3 +8,5 @@ Rplots.pdf
 # R CMD check artifacts
 *.Rcheck/
 *.tar.gz
+/doc/
+/Meta/

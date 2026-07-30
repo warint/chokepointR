@@ -25,13 +25,11 @@ Development (UNCTAD) 2024](#ref-unctad2024)).
 `chokepointR` covers **eight** maritime chokepoints chosen for their
 combination of traffic volume and strategic irreplaceability: the Panama
 and Suez Canals, and the Straits of Hormuz, Malacca, Bab el-Mandeb,
-Gibraltar, Dover and the Turkish Straits. This article documents the
-**maritime resilience profile**, which is deliberately
-**chokepoint-scoped**: port clusters and inland networks (e.g. Black Sea
-ports, the Mississippi system) appear in source incidents but are out of
-scope for the profile, so that every profiled unit is comparable. (The
-multilayer *seaport / cargo-airport / rail* framework is documented
-separately in the *Multimodal* article.)
+Gibraltar, Dover and the Turkish Straits. The package is deliberately
+**maritime and chokepoint-scoped**: port clusters and inland networks
+(e.g. Black Sea ports, the Mississippi system) appear in source
+incidents but are out of scope for the profile, so that every profiled
+unit is comparable.
 
 The design principle throughout is **transparency over authority**: the
 package ships facts with per-cell attribution and a reproducible index

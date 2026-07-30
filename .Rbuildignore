@@ -18,3 +18,5 @@
 ^inst/DESIGN-.*\.md$
 ^chokepointR\.Rcheck$
 ^chokepointR_.*\.tar\.gz$
+^doc$
+^Meta$
