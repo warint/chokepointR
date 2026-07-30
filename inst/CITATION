@@ -1,0 +1,24 @@
+citHeader("To cite the chokepointR package in publications, please use:")
+
+bibentry(
+  bibtype = "Manual",
+  title   = "chokepointR: Global Trade Chokepoint Risks and Resilience",
+  author  = person("Thierry", "Warin"),
+  year    = "2026",
+  note    = "R package version 0.4.0",
+  url     = "https://github.com/warint/chokepointR",
+  textVersion = paste(
+    "Warin, Thierry (2026).",
+    "chokepointR: Global Trade Chokepoint Risks and Resilience.",
+    "R package version 0.4.0.",
+    "https://github.com/warint/chokepointR"
+  )
+)
+
+citFooter(
+  "The resilience profile's trade-dependency, systemic-risk and network-",
+  "centrality measures are computed from Verschuur & Hall (2025), ",
+  "'Maritime chokepoint dependencies and systemic risks', Nature ",
+  "Communications; data on Zenodo (CC BY 4.0), doi:10.5281/zenodo.13841881. ",
+  "Please cite that work as well when using those columns."
+)

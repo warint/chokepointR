@@ -1,0 +1,268 @@
+---
+title: "Methodology: framework, definitions and analyses"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+bibliography: references.bib
+link-citations: true
+vignette: >
+  %\VignetteIndexEntry{Methodology: framework, definitions and analyses}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", out.width = "100%")
+library(chokepointR)
+```
+
+This vignette documents the conceptual framework, the definitions of every
+measure, and the analyses behind `chokepointR`, so that results can be cited and
+reproduced in academic work. It is written to be read alongside the data
+dictionaries (`?chokepoint_resilience`, `?chokepoint_context`,
+`?chokepoint_sources`) and the provenance notes in `DATA-PROVENANCE.md`.
+
+## 1. Motivation and scope
+
+A large share of world seaborne trade -- and most seaborne oil -- must pass
+through a small number of maritime **chokepoints**: narrow straits and
+artificial canals with no close substitute. Because flows concentrate there, a
+localised disruption (grounding, drought, conflict, closure) can propagate
+through global value chains far beyond the immediate region. This concentration
+is precisely why chokepoints are treated as systemic nodes in the economic-
+geography and trade-resilience literatures [@verschuur2025; @unctad2024].
+
+`chokepointR` covers **eight** maritime chokepoints chosen for their combination
+of traffic volume and strategic irreplaceability: the Panama and Suez Canals,
+and the Straits of Hormuz, Malacca, Bab el-Mandeb, Gibraltar, Dover and the
+Turkish Straits. The package is deliberately **maritime and chokepoint-scoped**:
+port clusters and inland networks (e.g. Black Sea ports, the Mississippi system)
+appear in source incidents but are out of scope for the profile, so that every
+profiled unit is comparable.
+
+The design principle throughout is **transparency over authority**: the package
+ships facts with per-cell attribution and a reproducible index recipe, not a
+black-box score. Every component is exposed so users can inspect, re-weight or
+discard it.
+
+## 2. The risk taxonomy
+
+Incidents are coded with a fixed **11-risk, 3-category** taxonomy
+(`risk_types`), independent of which risks happen to be observed in any given
+period:
+
+```{r taxonomy, echo = FALSE, results = "asis"}
+knitr::kable(cp_risk()[order(cp_risk()$risk_category), ],
+             row.names = FALSE, col.names = c("Risk", "Category", "Code"))
+```
+
+The three categories -- **weather and climate**, **security and conflict**, and
+**political and institutional** -- separate the *mechanism* of disruption from
+its *location*. Keeping the taxonomy fixed makes incident counts comparable over
+time and across chokepoints, and lets users aggregate exposure by mechanism.
+
+## 3. The resilience framework
+
+The resilience profile (`chokepoint_resilience`) decomposes each chokepoint into
+distinct, separately-sourced **dimensions**, then combines them into two
+transparent composite indices. We follow the standard resilience framing in
+which vulnerability rises with what is *at stake* and falls with the *capacity
+to absorb* a shock through substitution [@verschuur2025].
+
+### 3.1 Dimensions and definitions
+
+| Dimension | Column(s) | Definition | Primary source |
+|---|---|---|---|
+| Trade importance | `trade_value_bn_usd`, `oil_transit_mbd`, `oil_share_world_pct` | Annual maritime trade value routed through the chokepoint; crude + petroleum-liquids transit and its share of world seaborne oil | Verschuur & Hall (2025); U.S. EIA |
+| Dependency | `n_dependent_countries`, `max_dependency` | Number of countries routing >25% of maritime trade value through it; the single highest country dependency share | Verschuur & Hall (2025) |
+| Systemic risk | `evtd_bn_usd` | Expected value of trade disrupted -- the modelled economic loss from disruption | Verschuur & Hall (2025) |
+| Network centrality | `degree_centrality`, `strength_weighted`, `betweenness_centrality`, `betweenness_weighted`, `harmonic_centrality`, `pagerank` | Six graph-theory indicators of the chokepoint's position in the country-chokepoint dependency network (Section 4) | computed by the package |
+| Redundancy | `redundancy_score`, `has_alternative`, `alt_route`, `extra_days`, `bypass_capacity_mbd` | Whether a viable alternative route exists and its cost in extra time / bypass capacity | compiled from EIA, IEA, UNCTAD |
+| Realised disruption | `n_incidents` | Documented incidents in `chokepoint_risks` (2018 on) | per-row cited |
+
+### 3.2 Normalisation and component scores
+
+Each raw dimension is rescaled to `[0, 1]` **relative to these eight
+chokepoints** with min-max normalisation,
+$\tilde{x}_i = (x_i - \min_j x_j)/(\max_j x_j - \min_j x_j)$, so scores are
+*comparative*, not absolute. The component scores are:
+
+- `importance_score` = mean of normalised trade value and normalised oil transit
+  (oil missing counts as 0, so oil arteries such as Hormuz are not understated);
+- `dependency_score` = normalised `n_dependent_countries`;
+- `systemic_risk_score` = normalised `evtd_bn_usd`;
+- `redundancy_score` = the documented substitutability coding (0-1; higher = more
+  alternatives);
+- `exposure_score` = mean of `importance_score`, `dependency_score` and
+  `systemic_risk_score`.
+
+### 3.3 The composite indices
+
+$$
+\text{resilience\_index} = 100 \times \text{redundancy\_score}
+$$
+$$
+\text{vulnerability\_index} = 100 \times \text{exposure\_score} \times (1 - \text{redundancy\_score})
+$$
+
+The **resilience index** is high when a chokepoint can be bypassed; the
+**vulnerability index** is high when the stakes are large *and* alternatives are
+few -- the multiplicative form encodes that abundant stakes are only dangerous
+without a fallback.
+
+These indices are a **transparent, equally-weighted default, not a canonical
+measure**. Equal weighting is a neutral prior in the absence of a
+user's loss function; because every component ships in the data, users can
+re-weight or substitute their own aggregation:
+
+```{r reweight, eval = FALSE}
+d <- cp_resilience()
+# Example: weight systemic risk twice as heavily as the other exposure terms
+w_exposure <- with(d, (importance_score + dependency_score + 2 * systemic_risk_score) / 4)
+custom_vulnerability <- 100 * w_exposure * (1 - d$redundancy_score)
+```
+
+## 4. Network centrality
+
+Trade value and dependency counts describe how *big* a chokepoint is; they do
+not capture its role as a *broker* connecting countries. We therefore compute a
+panel of six graph-theory indicators on an explicit network, so this dimension
+is **reproducible rather than asserted**.
+
+### 4.1 The network
+
+Using the Verschuur & Hall country-level import dependencies, we build an
+**undirected, weighted, bipartite network** with one node per country (ISO3) and
+one per chokepoint. An edge links a country to a chokepoint when the country
+routes at least **10%** of its maritime import value through it, and the **edge
+weight is that dependency share** $s_{ci}\in[0.10,1]$. The graph spans **all**
+chokepoints in the source (27, not only our 8), so a node's centrality reflects
+its role in the whole maritime network before we extract the eight. At the 10%
+threshold the network is a **single connected component** (no isolated nodes),
+which is what makes the closeness-type measure below well defined.
+
+### 4.2 The six measures
+
+For a chokepoint node $v$ we report two **unweighted** structural measures and
+four that **use the dependency-share weights**:
+
+| Column | Weighted? | Definition | Interpretation |
+|---|---|---|---|
+| `degree_centrality` | no | degree of $v$, rescaled to the busiest chokepoint | breadth of dependence (how many countries) |
+| `strength_weighted` | yes | $\sum_i s_{vi}$ over incident edges | dependency *mass* (how much total reliance) |
+| `betweenness_centrality` | no | Freeman betweenness [@freeman1977], normalised | brokerage on the plain topology |
+| `betweenness_weighted` | yes | betweenness with edge distance $1/s_{vi}$ | brokerage weighted by dependence intensity |
+| `harmonic_centrality` | (topology) | $\tfrac{1}{n-1}\sum_{u\ne v} 1/d(v,u)$, normalised [@boldi2014] | closeness/reachability (disconnection-safe) |
+| `pagerank` | yes | stationary distribution of a share-weighted random walk [@brin1998] | recursive influence (important countries depend on it) |
+
+`degree_centrality` is rescaled to the busiest chokepoint; `betweenness_*` and
+`harmonic_centrality` are igraph-normalised to `[0, 1]`; `pagerank` sums to 1
+over **all** nodes, so chokepoint values are small positive numbers;
+`strength_weighted` is a raw sum of shares (an "effective number of
+fully-dependent countries"). All six ship as columns of `chokepoint_resilience`:
+
+```{r centrality-table}
+cols <- c("location", "degree_centrality", "strength_weighted",
+          "betweenness_centrality", "betweenness_weighted",
+          "harmonic_centrality", "pagerank")
+cp <- chokepoint_resilience[order(-chokepoint_resilience$betweenness_weighted), cols]
+print(cp, row.names = FALSE)
+```
+
+### 4.3 What they reveal
+
+Centrality is analytically distinct from raw importance. The Strait of Hormuz
+carries a fifth of the world's oil yet has **low** betweenness and PageRank: it
+is an oil *source* feeding a set of destinations, not a broker between many
+countries. Gibraltar and Malacca, by contrast, are the top **brokers** -- the
+sole gates between ocean basins -- so their removal would fragment the network
+most. The weighted measures add what the unweighted ones drop: `degree_centrality`
+**saturates** near 1 for the four busiest arteries (almost every trading country
+routes >=10% of imports through them -- a real property of a hub-dominated
+network), whereas `strength_weighted` and `betweenness_weighted` still separate
+them by *how heavily* countries depend on each. That is why we report both the
+structural and the weighted view.
+
+### 4.4 The threshold as a parameter, and what we exclude
+
+The 10% edge threshold is a **chosen parameter**. We verified sensitivity by
+recomputing every indicator at 0.05, 0.10 and 0.25 and correlating the eight
+chokepoints' scores (Spearman rank correlation vs the 0.10 reference):
+
+| Indicator | vs 0.05 | vs 0.25 |
+|---|---:|---:|
+| `betweenness_weighted` | 1.00 | 0.98 |
+| `pagerank` | 1.00 | 0.95 |
+| `strength_weighted` | 0.98 | 0.90 |
+| `degree_centrality` | 0.76 | 0.88 |
+| `harmonic_centrality` | 0.76 | 0.86 |
+| `betweenness_centrality` | 0.74 | 0.76 |
+
+The **weighted** rankings are very robust to the threshold; the unweighted
+betweenness/degree and harmonic rankings are moderately stable (magnitudes move
+more than ranks). Treat the unweighted columns as an **ordinal** signal, and
+re-run `data-raw/prep_zenodo.R` with a different threshold to test robustness for
+a specific application.
+
+We deliberately **do not ship** eigenvector centrality or raw closeness (both
+degenerate or are hard to interpret on a bipartite graph), the clustering
+coefficient (identically 0 -- a bipartite graph has no triangles), or k-core
+coreness (low discrimination -- most nodes share one $k$ -- and a
+threshold-unstable ranking). A computable number is not automatically a
+meaningful one; we report only indicators with a defensible interpretation on
+*this* network.
+
+## 5. Quantitative context and provenance
+
+`chokepoint_context` gives a readable per-chokepoint profile -- vessel transits,
+vessel and cargo mix, trade shares, top users, local economic dependence and
+rerouting cost. Two rules protect its use in research:
+
+1. **Normal-year, like-for-like counts.** Transit figures are representative
+   *normal-year* values, never a crisis-depressed snapshot; the `transit_basis`
+   column states exactly what is counted (all vessels vs deep-draft; single
+   strait vs combined straits; reference year). Disruption *magnitudes* are kept
+   in `chokepoint_risks`, not blended into the counts. **Always read
+   `transit_basis` before comparing counts across chokepoints** -- for example,
+   the Malacca figure is the Malacca + Singapore Straits combined and is not
+   comparable to a single-strait count.
+2. **Per-figure provenance with a confidence flag.** Every figure is traceable
+   through `chokepoint_sources` (value, unit, year, basis, source, URL). The
+   `confidence` field is `High` (named authority / official statistics),
+   `Medium` (reputable reporting or AIS-derived, e.g. IMF PortWatch via trade
+   press) or `Low` (secondary aggregator not resolving to a named authority).
+   Filter to keep only what your work can stand behind:
+
+```{r sources, eval = FALSE}
+cp_sources(min_confidence = "High")
+```
+
+Following the package's "facts, not expression" principle, only factual figures
+are reproduced, each attributed; no source's copyrighted table or prose is
+copied (`DATA-PROVENANCE.md`).
+
+## 6. Limitations
+
+- **Small n.** Eight chokepoints; normalised scores are comparative within this
+  set and should not be read as absolute risk levels.
+- **Composite indices are conventions.** Equal weighting is a default, not a
+  claim; re-weight for your loss function.
+- **Vintage.** Trade and dependency measures reflect the Verschuur & Hall
+  base year; oil transit is the latest EIA release; context figures carry their
+  own `year`. These do not all share one reference year.
+- **Context breadth vs depth.** Some context cells are `NA` or `Low` confidence
+  where no authoritative normal-year figure was found; this is deliberate -- the
+  package does not pad gaps with unsourced numbers.
+- **Centrality is model-dependent.** It depends on the graph definition and the
+  10% threshold (Section 4.4); it is one lens, not the truth.
+
+## 7. Reproducibility
+
+The bundled `.rda` objects are rebuilt from scripts in `data-raw/`:
+`prep_zenodo.R` (downloads the Verschuur & Hall data, aggregates dependencies and
+computes centrality), `prep_context.R` (the curated context and source tables)
+and `build_data.R` (assembles and writes all datasets). Re-running them
+regenerates the data exactly.
+
+## References

@@ -1,0 +1,84 @@
+url: https://warint.github.io/chokepointR
+
+template:
+  bootstrap: 5
+  bslib:
+    primary: "#0b1f3a"
+    link-color: "#1f5c99"
+    base_font: {google: "Source Sans Pro"}
+    heading_font: {google: "Source Sans Pro"}
+    code_font: {google: "JetBrains Mono"}
+
+home:
+  title: "chokepointR: Maritime Trade-Chokepoint Risks and Resilience"
+  description: >
+    A reproducible, provenance-tracked profile of the disruption risk and
+    resilience of the world's eight major maritime trade chokepoints. For each
+    chokepoint it combines trade dependency, systemic economic risk, a panel of
+    graph-theory centrality indicators computed on the country-chokepoint
+    dependency network, quantitative traffic and cargo context, documented
+    disruption incidents and composite resilience and vulnerability indices —
+    every quantitative figure traceable to a per-cell source, URL and confidence
+    flag.
+
+navbar:
+  structure:
+    left:  [intro, reference, articles, news]
+    right: [search, github]
+  components:
+    articles:
+      text: Articles
+      href: articles/index.html
+
+reference:
+- title: "Resilience"
+  desc: >
+    Per-chokepoint resilience profile, network centrality and composite indices.
+  contents:
+  - cp_resilience
+- title: "Context & provenance"
+  desc: >
+    Quantitative traffic/cargo context and its per-figure citations.
+  contents:
+  - cp_context
+  - cp_sources
+- title: "Search & query"
+  desc: >
+    Find and filter chokepoint incident records.
+  contents:
+  - cp_search
+  - cp_data
+  - cp_risk
+  - cp_location
+- title: "Visualise"
+  desc: >
+    See the risk landscape on an interactive map.
+  contents:
+  - cp_map
+- title: "Live monitoring"
+  desc: >
+    Optional helpers that query live feeds on demand.
+  contents:
+  - cp_signals
+- title: "Datasets"
+  desc: >
+    The bundled data shipped with the package.
+  contents:
+  - chokepoint_resilience
+  - chokepoint_context
+  - chokepoint_sources
+  - chokepoint_risks
+  - chokepoints
+  - risk_types
+
+articles:
+- title: Articles
+  navbar: ~
+  contents:
+  - vignettes
+  - methodology
+
+footer:
+  structure:
+    left: developed_by
+    right: built_with

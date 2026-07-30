@@ -1,0 +1,9 @@
+location,has_alternative,alt_route,extra_days,bypass_capacity_mbd,substitutability,redundancy_note
+Strait of Malacca,TRUE,Lombok or Sunda Strait,3,NA,0.50,"Lombok/Sunda add ~1000+ nm but are deeper-draft capable; partial reroute feasible."
+Strait of Hormuz,TRUE,Saudi Petroline & UAE Habshan-Fujairah pipelines,NA,5.5,0.25,"Spare bypass pipeline capacity ~3.5-5.5 mb/d against ~20 mb/d of flow; Iran Goreh-Jask largely non-operational."
+Suez Canal,TRUE,Cape of Good Hope,12,NA,0.40,"Cape reroute adds ~3000-3500 nm / 10-14 days on Asia-Europe; feasible but costly."
+Strait of Bab el-Mandeb,TRUE,Cape of Good Hope or SUMED pipeline,12,2.5,0.30,"SUMED (~2.5 mb/d) bypasses only for Suez-bound Gulf oil; otherwise Cape reroute."
+Turkish Straits,FALSE,None (geographic),NA,NA,0.10,"No maritime bypass for Black Sea access; effectively irreplaceable."
+Panama Canal,FALSE,Suez / Cape Horn / US land bridge,NA,NA,0.10,"No like-for-like maritime alternative; options are far longer or intermodal."
+Strait of Gibraltar,FALSE,None (geographic),NA,NA,0.10,"Sole maritime gateway between the Mediterranean and Atlantic."
+Dover Strait,FALSE,None (geographic),NA,NA,0.10,"Busiest strait; no practical bypass for Channel traffic."

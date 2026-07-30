@@ -1,0 +1,228 @@
+#' Trade chokepoint disruption incidents
+#'
+#' A tidy log of documented disruption and passage-restriction incidents at
+#' major global trade chokepoints (2018 onward). Each row is a dated incident at
+#' one chokepoint, classified by risk type and a qualitative severity
+#' \code{level}, described in original wording and attributed to a resolvable
+#' \code{source_url}.
+#'
+#' @format A data frame with the following columns:
+#' \describe{
+#'   \item{location}{Chokepoint name (see \code{\link{chokepoints}}).}
+#'   \item{incident_year}{Year (or year range) of the incident.}
+#'   \item{risk}{Risk in natural language (e.g. "Storms", "Piracy"); see
+#'     \code{\link{risk_types}}.}
+#'   \item{risk_category}{One of "Weather and climate risk",
+#'     "Security and conflict risk", "Political and institutional risk".}
+#'   \item{risk_code}{Short risk code (e.g. "W-S", "S-P").}
+#'   \item{level}{Qualitative severity: "Low risk", "Medium risk", "High risk".}
+#'   \item{incident}{One-sentence factual description of the incident.}
+#'   \item{source}{Publisher of the cited report.}
+#'   \item{source_url}{Resolvable URL for the source.}
+#' }
+#' @details Coverage is incident-driven: chokepoints without a well-documented
+#'   incident in the period are absent from this table but remain listed in the
+#'   \code{\link{chokepoints}} reference. See the \code{DATA-PROVENANCE.md} file
+#'   installed with the package for full source and licensing notes.
+"chokepoint_risks"
+
+#' Chokepoint reference metadata
+#'
+#' Reference metadata for the 8 maritime straits and canals tracked by the
+#' package.
+#'
+#' @format A data frame with the following columns:
+#' \describe{
+#'   \item{location}{Chokepoint name.}
+#'   \item{type}{"Canal", "Maritime strait", "Port cluster" or "Inland network".}
+#'   \item{region}{Broad geographic region.}
+#'   \item{latitude}{Approximate representative latitude (decimal degrees).}
+#'   \item{longitude}{Approximate representative longitude (decimal degrees).}
+#' }
+#' @details Coordinates are approximate representative points for mapping and
+#'   proximity queries (e.g. \code{\link{cp_signals}}), not precise boundaries.
+"chokepoints"
+
+#' Risk taxonomy
+#'
+#' The 11 chokepoint risks used by the package, grouped into three categories.
+#' This is the fixed classification framework, independent of which risks happen
+#' to appear in \code{\link{chokepoint_risks}}.
+#'
+#' @format A data frame with the following columns:
+#' \describe{
+#'   \item{risk_code}{Short risk code (e.g. "W-S").}
+#'   \item{risk}{Risk in natural language.}
+#'   \item{risk_category}{Risk category the risk belongs to.}
+#' }
+"risk_types"
+
+#' Chokepoint resilience profiles
+#'
+#' A per-chokepoint profile combining how much world trade depends on each of
+#' the 8 maritime chokepoints, how substitutable it is, how much disruption it
+#' has seen, and composite resilience and vulnerability indices.
+#'
+#' @format A data frame with one row per chokepoint and the columns:
+#' \describe{
+#'   \item{location, type, region}{Chokepoint identity (see \code{\link{chokepoints}}).}
+#'   \item{oil_transit_mbd}{Crude + petroleum-liquids transit, million barrels/day
+#'     (\code{NA} for non-oil chokepoints).}
+#'   \item{oil_share_world_pct}{That transit as a share of world seaborne oil.}
+#'   \item{trade_value_bn_usd}{Annual maritime trade value routed through the
+#'     chokepoint, USD billions.}
+#'   \item{n_dependent_countries}{Countries sending >25\% of their maritime trade
+#'     value through the chokepoint.}
+#'   \item{max_dependency}{Highest single-country dependency share (0-1).}
+#'   \item{evtd_bn_usd}{Expected value of trade disrupted (systemic economic
+#'     risk), USD billions.}
+#'   \item{betweenness_centrality}{\emph{Unweighted} betweenness centrality in
+#'     the country-chokepoint trade-dependency network (0-1, igraph-normalised).
+#'     A brokerage measure: how often the chokepoint lies on shortest paths
+#'     linking countries. Computed by the package, not an external figure.}
+#'   \item{betweenness_weighted}{Betweenness on the \emph{weighted} graph, with
+#'     edge distance \code{= 1 / dependency share} so a stronger dependence is a
+#'     shorter path (0-1, igraph-normalised). Brokerage weighted by how heavily
+#'     countries rely on the chokepoint.}
+#'   \item{degree_centrality}{Number of countries routing >=10\% of their
+#'     maritime import value through the chokepoint, rescaled to the busiest
+#'     chokepoint in the network (0-1). Saturates near 1 for the busiest
+#'     arteries.}
+#'   \item{strength_weighted}{Weighted degree: the sum of the dependency shares
+#'     of the countries routing >=10\% of their maritime imports through the
+#'     chokepoint (a dependency "mass"; higher = more total reliance). Adds the
+#'     magnitude information that the unweighted \code{degree_centrality} drops.}
+#'   \item{harmonic_centrality}{Normalised harmonic centrality (0-1), a
+#'     disconnection-safe closeness: the mean inverse network distance from the
+#'     chokepoint to all other nodes. Higher = more central/near in the network.}
+#'   \item{pagerank}{Weighted PageRank (edge weight = dependency share): a
+#'     recursive influence score in which a chokepoint is important when
+#'     important countries depend on it. Sums to 1 over \emph{all} nodes in the
+#'     network, so chokepoint values are small positive numbers.}
+#'   \item{has_alternative, alt_route, extra_days, bypass_capacity_mbd}{Route
+#'     redundancy: whether a viable alternative exists, what it is, the extra
+#'     transit time, and any bypass-pipeline capacity.}
+#'   \item{n_incidents}{Documented incidents in \code{\link{chokepoint_risks}}.}
+#'   \item{importance_score, dependency_score, systemic_risk_score,
+#'     redundancy_score, exposure_score}{Dimension scores scaled 0-1 relative to
+#'     these 8 chokepoints (redundancy: higher = more substitutable).}
+#'   \item{resilience_index}{0-100; \code{100 * redundancy_score}. Higher = more
+#'     able to absorb a disruption via rerouting.}
+#'   \item{vulnerability_index}{0-100; \code{100 * exposure_score *
+#'     (1 - redundancy_score)}. Higher = high stakes with few alternatives.}
+#' }
+#' @details The composite indices are a transparent, equally-weighted default,
+#'   not a canonical measure; all component scores ship alongside so users can
+#'   re-weight. \code{importance_score} blends normalised trade value and oil
+#'   transit; \code{exposure_score} averages importance, dependency and systemic
+#'   risk. Scores are relative to these 8 chokepoints only.
+#'
+#'   \strong{Network centrality.} The six graph-theory indicators
+#'   (\code{betweenness_centrality}, \code{betweenness_weighted},
+#'   \code{degree_centrality}, \code{strength_weighted},
+#'   \code{harmonic_centrality}, \code{pagerank}) are computed in
+#'   \code{data-raw/prep_zenodo.R} on a bipartite country-chokepoint network
+#'   built from the Verschuur & Hall import dependencies: an edge links a country
+#'   to a chokepoint when it routes at least 10\% of its maritime import value
+#'   through it, with the dependency share as the edge weight, over \emph{all}
+#'   chokepoints in the source (not only these 8). At the 10\% threshold the
+#'   network is a single connected component, so the closeness-type measure is
+#'   well defined. The 10\% threshold is a chosen parameter; a sensitivity check
+#'   (Spearman rank correlation of the 8 chokepoints' scores at 0.05/0.10/0.25)
+#'   shows the \emph{weighted} indicators are very robust to it (weighted
+#'   betweenness, weighted strength and PageRank all >=0.90), while the
+#'   unweighted betweenness/degree and harmonic rankings are moderately stable
+#'   (~0.75-0.88); magnitudes move more than ranks. Eigenvector/raw-closeness,
+#'   clustering (identically 0 here) and k-core coreness are deliberately not
+#'   shipped -- they degenerate on, or are threshold-unstable over, this
+#'   bipartite graph. Centrality is a distinct dimension from oil importance --
+#'   the Strait of Hormuz is a high-volume oil \emph{source} but a low-betweenness
+#'   broker, whereas Gibraltar and Malacca are the top brokers. See the
+#'   \emph{Methodology} vignette for the full construction and limitations.
+#' @references
+#'   Verschuur, J. & Hall, J. (2025). Maritime chokepoint dependencies and
+#'   systemic risks. \emph{Nature Communications}. \doi{10.5281/zenodo.13841881}
+#'
+#'   Freeman, L. C. (1977). A set of measures of centrality based on
+#'   betweenness. \emph{Sociometry}, 40(1), 35-41. \doi{10.2307/3033543}
+#'
+#'   Boldi, P. & Vigna, S. (2014). Axioms for centrality. \emph{Internet
+#'   Mathematics}, 10(3-4), 222-262. \doi{10.1080/15427951.2013.865686}
+#'
+#'   Brin, S. & Page, L. (1998). The anatomy of a large-scale hypertextual Web
+#'   search engine. \emph{Computer Networks and ISDN Systems}, 30(1-7), 107-117.
+#'   \doi{10.1016/S0169-7552(98)00110-X}
+#' @source Trade value, dependency and expected-value-of-trade-disrupted:
+#'   Verschuur, J. & Hall, J. (2025), "Maritime chokepoint dependencies and
+#'   systemic risks", \emph{Nature Communications}; data on Zenodo (CC BY 4.0),
+#'   \doi{10.5281/zenodo.13841881}. Oil transit: U.S. Energy Information
+#'   Administration, World Oil Transit Chokepoints (public domain). Route
+#'   redundancy: compiled from EIA, IEA and UNCTAD; see \code{DATA-PROVENANCE.md}.
+"chokepoint_resilience"
+
+#' Chokepoint quantitative context profile
+#'
+#' A readable, per-chokepoint profile of traffic, cargo and economic context for
+#' the 8 chokepoints: how busy each is, what kind of trade and vessels move
+#' through it, who depends on it, and what rerouting costs when it is disrupted.
+#' Each figure is a fact stated in original wording; the full provenance (value,
+#' unit, year, basis, source, URL and a confidence flag) for every figure is in
+#' \code{\link{chokepoint_sources}}.
+#'
+#' @format A data frame with one row per chokepoint and the columns:
+#' \describe{
+#'   \item{location}{Chokepoint name (see \code{\link{chokepoints}}).}
+#'   \item{daily_transits, annual_transits}{Representative \emph{normal-year}
+#'     vessel counts (\code{NA} where no authoritative normal-year figure was
+#'     found). Crisis-year snapshots are deliberately excluded; disruption
+#'     magnitudes live in \code{\link{chokepoint_risks}}.}
+#'   \item{transit_basis}{What the transit counts actually measure -- all
+#'     vessels vs deep-draft, single strait vs combined straits, reference year,
+#'     and any crisis caveat. \strong{Read this before comparing counts across
+#'     chokepoints.}}
+#'   \item{share_world_trade}{Share of world trade routed through the chokepoint,
+#'     with the denominator (volume, value or oil) named in the text.}
+#'   \item{primary_cargo}{Dominant cargo/commodity types.}
+#'   \item{dominant_vessels}{Dominant vessel classes (with 2024 counts where
+#'     available).}
+#'   \item{top_users}{Principal user countries or carriers.}
+#'   \item{local_economic_note}{Local/regional economic dependence, quantified
+#'     where possible (canal revenue, GDP share, adjacent-port throughput).}
+#'   \item{reroute_note}{Main alternative route(s) and the extra distance, time
+#'     or bypass capacity involved.}
+#' }
+#' @details Transit counts come from different counting conventions and cannot
+#'   be compared blindly; always consult \code{transit_basis}. See
+#'   \code{\link{chokepoint_sources}} for per-figure citations and
+#'   \code{DATA-PROVENANCE.md} for licensing.
+#' @seealso \code{\link{chokepoint_sources}}, \code{\link{chokepoint_resilience}}
+"chokepoint_context"
+
+#' Per-figure provenance for the context profile
+#'
+#' A tidy, long-format citation table: one row per quantitative figure in
+#' \code{\link{chokepoint_context}} (and related measures), each attributed to a
+#' named source, a resolvable URL and a confidence flag. This is the citable
+#' backbone that lets every number in the package be traced and re-checked.
+#'
+#' @format A data frame with the following columns:
+#' \describe{
+#'   \item{location}{Chokepoint name.}
+#'   \item{variable}{Short name of the figure (e.g. "oil_transit", "toll_revenue").}
+#'   \item{value}{The figure, in original wording (may include a range or a
+#'     crisis comparison).}
+#'   \item{unit}{Unit of the figure.}
+#'   \item{year}{Reference year (or year the figure describes).}
+#'   \item{basis}{What is counted / how the figure is defined.}
+#'   \item{source}{Publisher of the cited figure.}
+#'   \item{source_url}{Resolvable URL for the source.}
+#'   \item{confidence}{"High" (named authority / official statistics), "Medium"
+#'     (reputable reporting or AIS-derived, e.g. IMF PortWatch via trade press),
+#'     or "Low" (secondary aggregator not resolving to a named authority). Filter
+#'     on this to keep only authoritative figures.}
+#' }
+#' @details Following the package's "facts, not expression" principle, only
+#'   factual figures are reproduced, each with attribution; no source's
+#'   copyrighted table or prose is copied. See \code{DATA-PROVENANCE.md}.
+#' @seealso \code{\link{chokepoint_context}}
+"chokepoint_sources"

@@ -1,0 +1,153 @@
+---
+title: "Getting started with chokepointR"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{Getting started with chokepointR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.2,
+  dpi = 120, out.width = "100%"
+)
+library(chokepointR)
+has_viz     <- requireNamespace("ggplot2", quietly = TRUE)
+has_leaflet <- requireNamespace("leaflet", quietly = TRUE)
+cat_cols <- c("Weather and climate risk" = "#0072B2",
+              "Security and conflict risk" = "#D55E00",
+              "Political and institutional risk" = "#009E73")
+```
+
+## What is `chokepointR`?
+
+A large share of seaborne trade — and most seaborne oil — must pass through a
+handful of maritime **chokepoints**: canals such as Suez and Panama, and straits
+such as Hormuz, Malacca, Bab el-Mandeb, Gibraltar, the Turkish Straits and
+Dover. When one is disrupted, the shock propagates through global value chains.
+
+`chokepointR` profiles the **resilience** of these 8 chokepoints. It answers:
+
+> *How much does world trade depend on each chokepoint, how substitutable is it,
+> what has actually gone wrong there — and how vulnerable does that make it?*
+
+It is not a measure of global value chains themselves; it supplies the
+**risk / resilience layer** that supply-chain and GVC analysis needs.
+
+## Dataset at a glance
+
+```{r}
+library(chokepointR)
+c(resilience = nrow(chokepoint_resilience),
+  incidents  = nrow(chokepoint_risks),
+  chokepoints = nrow(chokepoints),
+  risk_types  = nrow(risk_types))
+
+# incident coverage and period
+range(as.integer(substr(chokepoint_risks$incident_year, 1, 4)))
+table(chokepoint_risks$risk_category)
+```
+
+## The resilience profile
+
+`cp_resilience()` returns one row per chokepoint with importance, dependency,
+systemic-risk and redundancy measures, plus two composite indices.
+
+```{r}
+cp_resilience()[, c("location", "trade_value_bn_usd", "n_dependent_countries",
+                    "evtd_bn_usd", "resilience_index", "vulnerability_index")]
+```
+
+**How the indices are built (transparent, equally-weighted default):**
+
+* `importance_score` blends normalised maritime trade value and oil transit.
+* `exposure_score` = mean of importance, dependency and systemic-risk scores.
+* `resilience_index` = `100 * redundancy_score` (route substitutability).
+* `vulnerability_index` = `100 * exposure_score * (1 - redundancy_score)` — high
+  stakes with few alternatives.
+
+All component scores ship in the data, so you can re-weight them for your own
+definition of resilience.
+
+```{r vulnerability, eval = has_viz, echo = FALSE, fig.height = 3.8}
+library(ggplot2)
+d <- cp_resilience()
+ggplot(d, aes(reorder(location, vulnerability_index), vulnerability_index,
+              fill = resilience_index)) +
+  geom_col(width = 0.72) +
+  coord_flip() +
+  scale_fill_gradient(low = "#d7301f", high = "#2ca25f", name = "Resilience") +
+  labs(title = "Chokepoint vulnerability", x = NULL,
+       y = "Vulnerability index (0-100)") +
+  theme_minimal(base_size = 11) +
+  theme(panel.grid.major.y = element_blank(), panel.grid.minor = element_blank())
+```
+
+Plotting exposure against redundancy shows the two forces behind the index —
+the top-left (high exposure, low redundancy) is where systemic risk concentrates.
+
+```{r scatter, eval = has_viz, echo = FALSE, fig.height = 4}
+ggplot(d, aes(redundancy_score, exposure_score)) +
+  geom_point(aes(size = trade_value_bn_usd), colour = "#0072B2", alpha = 0.7) +
+  geom_text(aes(label = location), size = 3, vjust = -1.1, colour = "grey25") +
+  scale_size_area(max_size = 11, guide = "none") +
+  scale_x_continuous(expand = expansion(mult = 0.15)) +
+  scale_y_continuous(expand = expansion(mult = 0.12)) +
+  labs(title = "Exposure vs. route redundancy",
+       x = "Redundancy (route substitutability)", y = "Exposure") +
+  theme_minimal(base_size = 11)
+```
+
+## Explore the incidents
+
+The `chokepoint_risks` log records documented disruptions. Search in plain
+language:
+
+```{r}
+cp_search("drought Panama")[, c("location", "incident_year", "incident")]
+```
+
+Filter on any dimension with `cp_data()`:
+
+```{r}
+cp_data(locations = "Strait of Bab el-Mandeb")[, c("incident_year", "risk", "incident")]
+```
+
+Map them in one call (interactive **leaflet**, coloured by risk level):
+
+```{r map, eval = has_leaflet, screenshot.force = FALSE}
+cp_map(category = "Security and conflict risk")
+```
+
+## Reference: the risk taxonomy
+
+```{r, echo = FALSE, eval = requireNamespace("kableExtra", quietly=TRUE)}
+library(kableExtra)
+kbl(cp_risk(), col.names = c("Risk", "Risk Category", "Risk Code")) |>
+  kable_material()
+```
+
+## Live hazard signals (optional)
+
+`cp_signals()` fetches recent natural-hazard events (public-domain USGS
+earthquake data) near a chokepoint. It needs an internet connection and returns
+`NULL` when offline.
+
+```{r, eval = FALSE}
+cp_signals("Strait of Hormuz", days = 90, min_magnitude = 4.5)
+```
+
+## Data, provenance and citation
+
+`chokepointR` ships **facts** with attribution. Trade-dependency and
+systemic-risk measures build on Verschuur & Hall (2025, *Nature Communications*;
+data CC BY 4.0); oil transit is from the U.S. EIA (public domain); incidents
+carry per-row citations. See `DATA-PROVENANCE.md` for full notes.
+
+```{r}
+citation("chokepointR")
+```

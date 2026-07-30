@@ -1,0 +1,9 @@
+location,trade_value_bn_usd,n_dependent_countries,max_dependency,evtd_bn_usd
+Dover Strait,1836.2,22,0.78,0
+Panama Canal,759.6,15,0.69,0.56
+Strait of Bab el-Mandeb,1858.5,45,0.79,4.16
+Strait of Gibraltar,2035.6,52,0.94,0.06
+Strait of Hormuz,885.1,18,0.89,0.46
+Strait of Malacca,2428.5,52,0.83,1.07
+Suez Canal,1850.3,44,0.58,2.07
+Turkish Straits,551.1,15,0.7,0.17

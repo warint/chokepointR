@@ -1,0 +1,47 @@
+Package: chokepointR
+Type: Package
+Title: Global Trade Chokepoint Risks and Resilience
+Version: 0.6.0
+Authors@R:
+    person("Thierry", "Warin", , "thierry.warin@hec.ca", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-5921-3428"))
+Description: Profiles the disruption risk and resilience of the world's major
+    maritime trade chokepoints -- the eight straits and canals through which a
+    large share of seaborne trade and oil must pass. For each chokepoint it
+    combines how much world trade depends on it, route substitutability, a panel
+    of graph-theory centrality indicators (weighted and unweighted betweenness,
+    degree and weighted strength, harmonic centrality and PageRank) computed on
+    the country-chokepoint trade-dependency network, quantitative traffic and
+    cargo context (vessel transits, vessel and cargo mix, trade shares, local
+    economic dependence), documented disruption incidents (2018 onward, each with
+    a resolvable citation), and composite resilience and vulnerability indices, to
+    support assessment of how exposed supply chains and global value chains are to
+    trade-route disruption. Every quantitative figure carries a per-cell source,
+    URL and confidence flag. Trade-dependency, systemic-risk and centrality
+    measures build on Verschuur and Hall (2025) <doi:10.5281/zenodo.13841881>;
+    oil-transit figures are from the U.S. Energy Information Administration. An
+    optional helper queries a live hazard feed (USGS) without redistributing
+    third-party data.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 3.5.0)
+Imports:
+    jsonlite,
+    utils
+Suggests:
+    dplyr,
+    ggplot2,
+    igraph,
+    kableExtra,
+    knitr,
+    leaflet,
+    rmarkdown,
+    scales,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+URL: https://warint.github.io/chokepointR/, https://github.com/warint/chokepointR
+BugReports: https://github.com/warint/chokepointR/issues
+RoxygenNote: 8.0.0
+Config/testthat/edition: 3
